@@ -1,0 +1,128 @@
+setwd("C:\\work")
+myY0 <- read.csv("new_myY.f.csv", head = TRUE)
+myGD=read.csv(file="myGD.f.csv",head=T)
+myGM=read.csv(file="myGM_newsoftware.csv",head=T)
+myCV=read.csv(file="myCV.f.csv",head=T)
+source("C:\\work\\software\\gapit_functions.txt")
+seeds=610041
+set.seed(seeds)
+ntrait=2
+nrep=20
+nfold=5
+cutOff=0.29223
+X=myGD[,-1]
+n=ncol(X)
+acc.all=NULL
+results <- data.frame(
+  correlation1_2 = numeric(0),
+  correlation2_2 = numeric(0),
+  correlation1_5 = numeric(0),
+  correlation2_5 = numeric(0))
+#cor.total <- numeric(nrep)
+#cat("开始循环\n")
+	for(i in 1:nrep)
+	{
+	    myY_2=myY0[, c(1, 2)]
+	    sets=sample(cut(1:nrow(myY_2),nfold,labels=FALSE),nrow(myY_2))
+		
+        myY_5=myY0[, c(1, 5)]
+	    sets_5=sample(cut(1:nrow(myY_5),nfold,labels=FALSE),nrow(myY_5))		
+        acc.rep=NULL
+	        for(j in 1:nfold)
+	        {
+			   training_2=myY_2[, c(1, 2)]
+	           training_2[sets==j,2]=NA
+			   training.taxa_2<- training_2[!is.na(training_2[, 2]), ]
+			   
+			   training_5=myY_5[, c(1, 2)]
+	           training_5[sets_5==j,2]=NA
+			   training.taxa_5<- training_5[!is.na(training_5[, 2]), ]
+myGAPIT1_2=GAPIT(Y=training.taxa_2,
+              GD=myGD,
+              GM=myGM,
+              CV=myCV,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+              model=c("Blink"),
+			  buspred=TRUE,
+			  lmpred=TRUE)
+
+Pred=myGAPIT1_2$Pred
+Pred2=merge(Pred,myY_2,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation1_2=cor(Pred3[,1],Pred3[,2])
+			  
+myGAPIT1_5=GAPIT(Y=training.taxa_5,
+              GD=myGD,
+              GM=myGM,
+              CV=myCV,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+              model=c("Blink"),
+			  buspred=TRUE,
+			  lmpred=TRUE)			  
+
+Pred=myGAPIT1_5$Pred
+Pred2=merge(Pred,myY_5,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation1_5=cor(Pred3[,1],Pred3[,2])
+			  
+gwas_2=myGAPIT1_2$GWAS#体长的显著性位点
+sigs_2=gwas_2[which(gwas_2[,4]<0.29223/n),]
+X.sigs_2=X[,as.character(myGM[,1])%in%as.character(sigs_2[,1])]
+			  
+			  
+gwas_5=myGAPIT1_5$GWAS#体斜长的显著性位点
+sigs_5=gwas_5[which(gwas_5[,4]<0.29223/n),]
+X.sigs_5=X[,as.character(myGM[,1])%in%as.character(sigs_5[,1])]
+CV.sigs=cbind(myCV,X.sigs_2,X.sigs_5)	
+				  
+
+myGAPIT2_2=GAPIT(Y=training.taxa_2,
+              GD=myGD,
+              GM=myGM,
+              CV=CV.sigs,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+			  model=c("Blink"),
+              buspred=TRUE,
+			  lmpred=TRUE)#TRUE是MAS，一般线性模型；FALSE是ABlup	
+			  
+Pred=myGAPIT2_2$Pred
+Pred2=merge(Pred,myY_2,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]#2是预测，1是参考
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation2_2=cor(Pred3[,1],Pred3[,2])
+			  
+myGAPIT2_5=GAPIT(Y=training.taxa_5,
+              GD=myGD,
+              GM=myGM,
+              CV=CV.sigs,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+			  model=c("Blink"),
+              buspred=TRUE,
+			  lmpred=TRUE)	
+			  
+Pred=myGAPIT2_5$Pred
+Pred2=merge(Pred,myY_5,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation2_5=cor(Pred3[,1],Pred3[,2])			  	
+print("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+print(correlation1_2)
+print(correlation2_2)
+print(correlation1_5)
+print(correlation2_5)
+
+results <- rbind(results, data.frame(
+    correlation1_2 = correlation1_2,
+    correlation2_2 = correlation2_2,
+    correlation1_5 = correlation1_5,
+    correlation2_5 = correlation2_5))
+#cor.total[i] <- correlation*
+#cat("第", i, "次循环，相关性值为：", correlation, "\n")
+}}
+write.csv(results, "results_GS_20×5.csv", row.names = FALSE)

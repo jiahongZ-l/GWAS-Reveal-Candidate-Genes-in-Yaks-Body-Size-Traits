@@ -1,0 +1,12 @@
+source("http://zzlab.net/GAPIT/gapit_functions.txt")
+setwd("C:\\work")
+myY <- read.table("mdp_traits.txt", head = TRUE)
+myGD=read.table(file="mdp_numeric.txt",head=T)
+myGM=read.table(file="mdp_SNP_information.txt",head=T)
+myGAPIT=GAPIT(
+Y=myY[,c(1,2,3)], #fist column is ID
+GD=myGD,
+GM=myGM,
+PCA.total=3,
+model=c("FarmCPU", "Blink"),
+Multiple_analysis=TRUE)

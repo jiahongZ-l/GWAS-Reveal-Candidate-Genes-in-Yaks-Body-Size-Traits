@@ -1,0 +1,10 @@
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)
+myGD=read.csv(file="Numeric format for genotype files.csv",head=T)
+#intersect(aa,bb)
+intersection_names=intersect(myY[,1],myGD[,1])
+new_myY <- myY[myY[,1] %in% intersection_names, ]
+new_myGD <- myGD[myGD[,1] %in% intersection_names, ]
+new_myGD <- new_myGD[match(new_myY[,1], new_myGD[,1]), ]
+write.csv(new_myY, "match_myY.csv", row.names = FALSE)
+write.csv(new_myGD, "match_myGD.csv", row.names = FALSE)

@@ -1,0 +1,100 @@
+setwd("C:\\work")
+data0=read.table("data.txt",head=T)
+taxa=paste(data0[,1],data0[,3],sep="")
+sample00=cbind(as.data.frame(taxa),data0[,-c(1:4)])
+type=unique(sample00[,1])
+n=length(type)
+mean.values=matrix(NA,n,7)
+for(i in 1:n)
+{
+    index=sample00[,1]==type[i]
+# print(mean(sample00[index,2]))
+mean.values[i,]=apply(sample00[index,-1],2,function(one) mean(as.numeric(one),na.rm=TRUE))
+}
+result=cbind(as.data.frame(type),mean.values)
+aa=data0[,-c(1:4)]
+aa
+head(aa)
+aa1=aa[1,]
+aa1
+A=c("type",colnames(aa1))
+aa2=rbind(A,result)
+colnames(aa2)=NULL
+write.csv(aa2,"1YSdata.csv",quote=F,row.names=F,col.names=T)
+
+
+
+
+setwd("C:\\work")
+df=read.csv("1YSdata.csv",head=T)
+X=df[,-1]
+X=X[,-8]#可能有这行代码，可能没有这行代码
+X=as.numeric(as.matrix(X))
+df2=matrix(X,826,7)
+head(df2)
+df2[df2=="NaN"]=NA
+library(PerformanceAnalytics)
+colnames(df2)=c("BL","BH","ML","BCL","CCB1","CC","CCB2")
+pdf("The phenotypic distribution and correlation of three main yak breeds.pdf", width = 10, height = 6)
+chart.Correlation(df2,histogram=TRUE,pch=19)
+dev.off()
+
+
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)
+BL_min=min(na.omit(myY[,2]))
+BL_max=max(na.omit(myY[,2]))
+BL_mean=mean(na.omit(myY[,2]))
+BL_sd=sd(myY[,2],na.rm=T)
+BL_se=BL_sd/sqrt(length(myY[,2]))
+a=t.test(myY[,2])
+se=a$stderr
+BL_min
+BL_max
+BL_mean
+BH_min=min(na.omit(myY[,3]))
+BH_max=max(na.omit(myY[,3]))
+BH_mean=mean(na.omit(myY[,3]))
+BH_min
+BH_max
+BH_mean
+
+
+#> setwd("C:\\work")
+#> myY <- read.csv("file1111.csv", head = TRUE)
+#> mw_count <- sum(myY[, 9] == "MW")
+#> mw_count
+#[1] 307
+#> YS_count <- sum(myY[, 9] == "YS")
+#> YS_count
+#[1] 336
+#> HH_count <- sum(myY[, 9] == "HH")
+#> HH_count
+#[1] 183
+
+setwd("C:\\work\\第五版年龄不累加，更改阈值线，新版GAPIT\\基因型结果")
+myMAF <- read.csv("GAPIT.Genotype.Frequency_MAF.csv", head = TRUE)
+mean_value <- mean(myMAF[, 3], na.rm = TRUE)
+median_value <- median(myMAF[, 3], na.rm = TRUE)
+min_value <- min(myMAF[, 3], na.rm = TRUE)
+max_value <- max(myMAF[, 3], na.rm = TRUE)
+> mean_value
+[1] 0.1617094
+> median_value
+[1] 0.1260623
+> min_value
+[1] 0
+> max_value
+[1] 0.5
+
+
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)#826
+myCV=read.csv(file="myCV.csv",head=T)#526
+result <- myCV$taxa[myCV$age9 == 1]
+intersection_names=intersect(myY[,1],result)
+new_myY <- myY[myY[,1] %in% intersection_names, ]
+mean_values <- apply(new_myY[, 2:8], 2, mean, na.rm = TRUE)
+sd_values <- apply(new_myY[, 2:8], 2, sd, na.rm = TRUE)
+mean_values
+sd_values

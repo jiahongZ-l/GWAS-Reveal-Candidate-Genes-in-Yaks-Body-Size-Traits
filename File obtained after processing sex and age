@@ -1,0 +1,132 @@
+#性别和年龄的行名处理（Q，LR）
+setwd("C:/work")
+lr=data.table::fread("longri.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"))
+lr$class <- sub("-", "", lr$class)
+write.csv(lr,"longri1.csv",quote=F,row.names=F,col.names=T)
+
+setwd("C:/work")
+qh2021=data.table::fread("qinghai2021.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"))
+qh2021$taxa <- paste0("Q", qh2021$taxa)
+write.csv(qh2021,"qinghai21.csv",row.names=F,col.names=T)
+
+setwd("C:/work")
+qh2022=data.table::fread("qinghai2022.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"))
+qh2022$taxa <- paste0("Q", qh2022$taxa)
+write.csv(qh2022,"qinghai22.csv",row.names=F,col.names=T)
+
+
+#合成myGD的列名文件
+setwd("C:/work")
+myGD=data.table::fread("Numeric format for genotype files.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+myGD=myGD[,1]
+write.csv(myGD, "columnname.csv", row.names = FALSE)
+
+
+#与GWAS基因型文件做过滤
+setwd("C:/work")
+lr=data.table::fread("longri.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+columnname <- read.csv("columnname.csv", head = T)
+columnname=as.character(as.matrix(columnname))
+taxa=lr[,1]
+index=taxa%in%columnname
+lr2=lr[index,]
+write.csv(lr2,"longri_f.csv",row.names=F,col.names=T)
+
+setwd("C:/work")
+qh21=data.table::fread("qinghai21.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+columnname <- read.csv("columnname.csv", head = T)
+columnname=as.character(as.matrix(columnname))
+taxa=qh21[,1]
+index=taxa%in%columnname
+qh212=qh21[index,]
+write.csv(qh212,"qinghai21_f.csv",row.names=F,col.names=T)
+
+setwd("C:/work")
+qh22=data.table::fread("qinghai22.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+columnname <- read.csv("columnname.csv", head = T)
+columnname=as.character(as.matrix(columnname))
+taxa=qh22[,1]
+index=taxa%in%columnname
+qh222=qh22[index,]
+write.csv(qh222,"qinghai22_f.csv",row.names=F,col.names=T)
+
+
+lr=data.table::fread("longri_f.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+qh21=data.table::fread("qinghai21_f.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+qh22=data.table::fread("qinghai22_f.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+total=rbind(lr,qh21,qh22)	#279+1,325,153
+write.csv(total,"total.csv",row.names=F,col.names=T)
+
+
+#去掉包含NA的行
+setwd("C:/work")
+total=data.table::fread("total.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+cleaned_dataframe <- na.omit(total)
+write.csv(cleaned_dataframe, "total.csv", row.names = FALSE)
+
+
+#让total.csv文件按照myGD文件第一列的编号进行排序
+setwd("C:/work")
+total=data.table::fread("total.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+myGD=read.csv(file="Numeric format for genotype files.csv",head=T)					  
+install.packages("dplyr")
+library(dplyr)
+order_sequence <- myGD$taxa
+total_sorted <- total %>%
+arrange(factor(taxa, levels = order_sequence))
+write.csv(total_sorted, "total_sorted.csv", row.names = FALSE)	  
+
+
+#年龄的效应非累加处理
+setwd("C:\\work")
+myCV=read.csv(file="total_sorted.csv",head=T)
+df1 <- data.frame(
+  age  <- c(myCV[,3]),
+  matrix(0, nrow =526, ncol = 12))
+colnames(df1)[-1] <- c(1,2,3,4,5,6,7,8,9,10,11,12)
+#result <- matrix(0, nrow = 526, ncol = 17)
+for (i in 1:526) {
+  for (j in 2:12) {
+    if (df1[i, 1] == colnames(df1)[j]) {
+      df1[i, j] <- 1
+    } else {
+      df1[i, j] <- 0
+    }
+    #result <- paste(result, df1[i, j], sep = "")
+  }
+}
+write.csv(df1, "myCV.csv", row.names = FALSE)
+#在excel中手动将不足1岁归为1岁，以此类推，将1岁并为2岁（因为1岁和嘴长的相关性是1），将11，12岁并为10岁，删除本列  

@@ -1,0 +1,86 @@
+#myGD文件与myCV文件做过滤
+#合成myCV的列名文件
+setwd("C:/work")
+myCV=read.csv(file="myCV.csv",head=T)
+myCV=myCV[,1]
+write.csv(myCV, "columnname_myCV.csv", row.names = FALSE)
+setwd("C:/work")
+myGD=read.csv(file="Numeric format for genotype files.csv",head=T)
+columnname <- read.csv("columnname_myCV.csv", head = T)
+columnname=as.character(as.matrix(columnname))
+taxa=myGD[,1]
+index=taxa%in%columnname
+myGD2=myGD[index,]
+write.csv(myGD2,"myGD_f.csv",row.names=F,col.names=T)
+
+
+#让myGD_f.csv文件按照myCV文件第一列的编号进行排序
+setwd("C:/work")
+total=data.table::fread("myGD_f.csv",
+                      header = T,
+                      na.strings = c("NA", "NaN"),
+					  data.table = F)
+myCV=read.csv(file="myCV.csv",head=T)
+library(dplyr)
+order_sequence <- myCV$taxa
+total_sorted <- total %>%
+arrange(factor(taxa, levels = order_sequence))
+write.csv(total_sorted, "myGD_f_rank.csv", row.names = FALSE)	
+
+
+#在R中，把csv文件中指定列名的多个列提取出来成为新文件(显著性位点文件)，之前采用1，现在采用2
+setwd("C:\\work")
+library(dplyr)
+myGD=read.csv(file="myGD_f_rank.csv",head=T)
+myCV=read.csv(file="myCV.csv",head=T)
+selected_columns <- c("S3_82995824")
+selected_data <- myGD %>% select(all_of(selected_columns))
+write.csv(selected_data, file = "myGD_f_rank_MLMM_CC.csv", row.names = FALSE)#1
+#在excel中，手动与myCV文件合并成myCV_MLMM_BL
+
+setwd("C:\\work")
+library(dplyr)
+myGD <- read.csv(file = "myGD_f_rank.csv", head = TRUE)
+myCV <- read.csv(file = "myCV.csv", head = TRUE)
+print(colnames(myGD))
+selected_columns <- c("S20_34180196","S29_32434590","S3_82995824")
+for (col in selected_columns) {
+  if (col %in% colnames(myGD)) {
+    print(paste("Column", col, "exists in the data."))
+  } else {
+    print(paste("Column", col, "does not exist in the data."))
+  }
+}
+selected_data_base <- myGD[, selected_columns, drop = FALSE]
+print(selected_data_base)
+write.csv(selected_data_base, file = "myGD_f_rank_Blink_CC.csv", row.names = FALSE)#2
+
+
+#把myCV文件与显著性位点文件合并成为新的myCV文件
+myGD_f_rank_Blink_CC=read.csv(file="myGD_f_rank_Blink_CC.csv",head=T)
+newmyCV_Blink_CC=cbind(myCV,myGD_f_rank_Blink_CC)
+write.csv(newmyCV_Blink_CC, file = "newmyCV_Blink_CC.csv", row.names = FALSE)
+
+
+#把新的myCV文件代入不同性状，模型与显著性位点的模型保持一致
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)
+myGD=read.csv(file="Numeric format for genotype files.csv",head=T)
+myGM=read.csv(file="mdp_SNP_information.csv",head=T)
+myCV=read.csv(file="newmyCV_Blink_CC.csv",head=T)
+source("C:\\work\\software\\gapit_functions.txt")
+myGAPIT=GAPIT(#一个模型一个性状
+Y=myY[,c(1,6)], 
+GD=myGD,
+GM=myGM,
+CV=myCV,
+cutOff=0.29223,
+model=c("Blink"),
+Multiple_analysis=TRUE)
+
+
+
+
+
+
+

@@ -1,0 +1,113 @@
+setwd("C:\\work")
+myY <- read.csv("match_myY.csv", head = TRUE)
+myGD <- read.csv("match_myGD.csv", head = TRUE)
+library(dplyr)
+snp_1=select (myGD,S3_82995824)
+snp_2=select (myGD,S11_92286727)
+snp_3=select (myGD,S20_34180196)
+snp_4=select (myGD,SY_1597301)
+snp_5=select (myGD,SY_25036649)
+y=myY[,6]
+index=is.na(y)
+dd = cbind(y[!index], snp_1[!index, ], snp_2[!index, ], snp_3[!index, ], snp_4[!index, ], snp_5[!index, ])
+dd=as.data.frame(dd)
+colnames(dd)=c("y","snp_1","snp_2","snp_3","snp_4","snp_5")
+#求PVE值
+library(lme4)
+lm0=lmer(y~1+(1|snp_1)+(1|snp_2)+(1|snp_3)+(1|snp_4)+(1|snp_5),data=dd)
+v=summary(lm0)$varcor
+v=as.data.frame(summary(lm0)$varcor)
+v=v[-nrow(v), ]
+v=v[order(v[,1]),]
+PVE6=(v[,5]^2)/sum(v[,5]^2)
+PVE6 <- PVE6 / max(PVE6)
+y=myY[,7]
+index=is.na(y)
+dd = cbind(y[!index], snp_1[!index, ], snp_2[!index, ], snp_3[!index, ], snp_4[!index, ], snp_5[!index, ])
+dd=as.data.frame(dd)
+colnames(dd)=c("y","snp_1","snp_2","snp_3","snp_4","snp_5")
+#求PVE值
+library(lme4)
+lm0=lmer(y~1+(1|snp_1)+(1|snp_2)+(1|snp_3)+(1|snp_4)+(1|snp_5),data=dd)
+v=summary(lm0)$varcor
+v=as.data.frame(summary(lm0)$varcor)
+v=v[-nrow(v), ]
+v=v[order(v[,1]),]
+PVE7=(v[,5]^2)/sum(v[,5]^2)
+PVE7 <- PVE7 / max(PVE7)
+maxmin <- data.frame(
+ SNP1=c(1, 0),
+ SNP2=c(1, 0),
+ SNP3=c(1, 0),
+ SNP4=c(1, 0),
+ SNP5=c(1, 0))
+dat <- data.frame(
+ SNP1=c(PVE6[1], PVE7[1]),
+ SNP2=c(PVE6[2], PVE7[2]),
+ SNP3=c(PVE6[3], PVE7[3]),
+ SNP4=c(PVE6[4], PVE7[4]),
+ SNP5=c(PVE6[5], PVE7[5]))
+dat <- rbind(maxmin,dat)
+library(fmsb)
+colors_border <- c("green", "red")
+colors_in <- NA
+pdf("Radar charts of ankle circumference and chest circumference2(2).pdf", width = 7, height = 7)
+radarchart(dat, axistype = 1, seg=5, plty = 1, pcol = colors_border, pfcol =colors_in,plwd = 3,
+           vlabels=c("S3_82995824", "S11_92286727", "S20_34180196", "SY_1597301","SY_25036649",vlcex = 1))
+legend("topright", legend = c("CCB1", "CC"), col = c("green", "red"), lty = c(1, 1), lwd = c(1, 1), cex = 1, box.lwd = 0)
+radarchart(dat, axistype = 1, seg=5, plty = 1, pcol = colors_border, pfcol =colors_in,plwd = 3,
+           vlabels=c("chr3:82995824", "chr11:92286727", "chr20:34180196", "chrY:1597301","chrY:25036649",vlcex = 1))
+dev.off()
+
+
+#固定效应模型判断SNP的显著性
+lm0=lm(y~1+snp_1+snp_2+snp_3+snp_4+snp_5,data=dd)
+str(lm0)
+summary(lm0)
+
+
+#查找特定的列名是否在文件中存在
+specific_column <- "S11_92286727"
+if (specific_column %in% colnames(myGD)) {
+  print(paste("Column", specific_column, "exists in the data."))
+} else {
+  print(paste("Column", specific_column, "does not exist in the data."))
+}
+
+
+#在R中，把csv文件中指定列名的多个列提取出来成为新文件
+#安装并加载dplyr包
+install.packages("dplyr")
+library(dplyr)
+#读取numerical基因型文件
+myGD <- read.csv("match_myGD.csv", head = TRUE)
+# 指定要提取的列名
+selected_columns <- c("S3_82995824", "S11_92286727", "S20_33859227","S20_33868368","S20_34062188","S20_34082808","S20_34180196","S20_34237476","S21_27694819","SY_1597301","SY_19537310","SY_25036649")
+# 使用select函数提取指定列
+selected_data <- myGD %>% select(all_of(selected_columns))
+# 保存为新文件（CSV格式）
+write.csv(selected_data, file = "significantSNP_data.csv", row.names = FALSE)
+
+
+setwd("C:\\work")
+selected_data <- read.csv("significantSNP_data.csv", head = TRUE)
+# 使用cor函数计算两两SNP之间的相关性
+snp_correlation <- cor(selected_data)
+snp_correlation
+X <- as.matrix(snp_correlation)
+store <- numeric() 
+for(i in 2:12){
+SNP=X[,i]
+SNP=SNP[1:(i-1)]
+if (max(abs(SNP))>0.9)store<-append(store,i)
+}
+
+
+# 使用cor函数计算两列数据的相关性，需要匹配两个文件（dim相同）
+setwd("C:\\work")
+phenotype <- read.csv("p.csv", head = TRUE)
+data <- read.csv(file="C32.csv",head=T)
+trait <- phenotype[, 3]
+column_data <- data$age1
+correlation <- cor(trait, column_data)
+correlation

@@ -1,0 +1,217 @@
+#hapmap转numerical
+setwd("C:\\work")
+myG <- read.csv("C:\\work\\706yaks.hmp.hmp.csv", head = FALSE)
+source("C:\\work\\software\\gapit_functions.txt")
+myGAPIT <- GAPIT(
+G=myG,
+PCA.total=3,
+output.numerical=TRUE,file.output =FALSE
+)
+myGD= myGAPIT$GD
+myGM= myGAPIT$GM
+write.csv(myGD,"myGD_newsoftware.csv",quote=F,row.names=F,col.names=T)
+write.csv(myGM,"myGM_newsoftware.csv",quote=F,row.names=F,col.names=T)
+
+#过滤，将myY,myGD和myCV文件变成相同行数
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)#826
+myGD=read.csv(file="myGD_newsoftware.csv",head=T)#706
+myGM=read.csv(file="myGM_newsoftware.csv",head=T)
+myCV=read.csv(file="myCV.csv",head=T)#526
+#myY <- na.omit(myY)#myY 261,intersection_names 199
+#X=intersect(A,intersect(B,C))
+intersection_names=intersect(myCV[,1],intersect(myY[,1],myGD[,1]))
+myY.f <- myY[myY[,1] %in% intersection_names, ]
+myGD.f <- myGD[myGD[,1] %in% intersection_names, ]
+myCV.f <- myCV[myCV[,1] %in% intersection_names, ]
+new_myY.f <- myY.f[match(myCV.f [,1], myY.f[,1]), ]
+write.csv(myGD.f,"myGD.f.csv",quote=F,row.names=F,col.names=T)
+write.csv(myCV.f,"myCV.f.csv",quote=F,row.names=F,col.names=T)
+write.csv(new_myY.f,"new_myY.f.csv",quote=F,row.names=F,col.names=T)
+
+setwd("C:\\work")
+myY0 <- read.csv("new_myY.f.csv", head = TRUE)
+myGD=read.csv(file="myGD.f.csv",head=T)
+myGM=read.csv(file="myGM_newsoftware.csv",head=T)
+myCV=read.csv(file="myCV.f.csv",head=T)
+source("C:\\work\\software\\gapit_functions.txt")
+seeds=610041
+set.seed(seeds)
+ntrait=2
+nrep=20
+nfold=5
+cutOff=0.29223
+X=myGD[,-1]
+n=ncol(X)
+acc.all=NULL
+results <- data.frame(
+  correlation1_2 = numeric(0),
+  correlation2_2 = numeric(0),
+  correlation1_5 = numeric(0),
+  correlation2_5 = numeric(0))
+	for(i in 1:nrep)
+	{
+	    seeds_internal <- sample(1:100000, 1)
+        set.seed(seeds_internal)
+	    myY_2=myY0[, c(1, 2)]
+	    sets=sample(cut(1:nrow(myY_2),nfold,labels=FALSE),nrow(myY_2))
+		
+        myY_5=myY0[, c(1, 5)]
+	    sets_5=sample(cut(1:nrow(myY_5),nfold,labels=FALSE),nrow(myY_5))		
+        acc.rep=NULL
+	        for(j in 1:nfold)
+	        {
+			print(paste("外层循环 i =", i, "内层循环 j =", j))
+			   training_2=myY_2[, c(1, 2)]
+	           training_2[sets==j,2]=NA
+			   training.taxa_2<- training_2[!is.na(training_2[, 2]), ]
+			   
+			   training_5=myY_5[, c(1, 2)]
+	           training_5[sets_5==j,2]=NA
+			   training.taxa_5<- training_5[!is.na(training_5[, 2]), ]
+myGAPIT1_2=GAPIT(Y=training.taxa_2,
+              GD=myGD,
+              GM=myGM,
+              CV=myCV,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+              model=c("Blink"),
+			  buspred=TRUE,
+			  lmpred=TRUE)
+
+Pred=myGAPIT1_2$Pred
+Pred2=merge(Pred,myY_2,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation1_2=cor(Pred3[,1],Pred3[,2])
+			  
+myGAPIT1_5=GAPIT(Y=training.taxa_5,
+              GD=myGD,
+              GM=myGM,
+              CV=myCV,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+              model=c("Blink"),
+			  buspred=TRUE,
+			  lmpred=TRUE)			  
+
+Pred=myGAPIT1_5$Pred
+Pred2=merge(Pred,myY_5,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation1_5=cor(Pred3[,1],Pred3[,2])
+
+
+myGAPIT_sigs1=GAPIT(Y=myY_2,
+              GD=myGD,
+              GM=myGM,
+              CV=myCV,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+              model=c("Blink"),
+			  buspred=TRUE,
+			  lmpred=TRUE)
+myGAPIT_sigs2=GAPIT(Y=myY_5, 
+              GD=myGD,
+              GM=myGM,
+              CV=myCV,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+              model=c("Blink"),
+			  buspred=TRUE,
+			  lmpred=TRUE)				  
+			  
+			  
+gwas_2=myGAPIT_sigs1$GWAS#体长的显著性位点
+sigs_2=gwas_2[which(gwas_2[,4]<0.29223/n),]
+X.sigs_2=X[,as.character(myGM[,1])%in%as.character(sigs_2[,1])]
+			  
+			  
+gwas_5=myGAPIT_sigs2$GWAS#体斜长的显著性位点
+sigs_5=gwas_5[which(gwas_5[,4]<0.29223/n),]
+X.sigs_5=X[,as.character(myGM[,1])%in%as.character(sigs_5[,1])]
+CV.sigs1=cbind(myCV,X.sigs_2)	
+CV.sigs2=cbind(myCV,X.sigs_5)			  
+
+myGAPIT2_2=GAPIT(Y=training.taxa_2,
+              GD=myGD,
+              GM=myGM,
+              CV=CV.sigs2,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+			  model=c("Blink"),
+              buspred=TRUE,
+			  lmpred=TRUE)#TRUE是MAS，一般线性模型；FALSE是ABlup	
+			  
+Pred=myGAPIT2_2$Pred
+Pred2=merge(Pred,myY_2,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]#2是预测，1是参考
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation2_2=cor(Pred3[,1],Pred3[,2])
+			  
+myGAPIT2_5=GAPIT(Y=training.taxa_5,
+              GD=myGD,
+              GM=myGM,
+              CV=CV.sigs1,
+			  cutOff=0.29223,
+			  Random.model=FALSE,
+			  model=c("Blink"),
+              buspred=TRUE,
+			  lmpred=TRUE)	
+			  
+Pred=myGAPIT2_5$Pred
+Pred2=merge(Pred,myY_5,by.x="Taxa",by.y="class")
+Pred3=Pred2[Pred2[,6]==2,c(11,12)]
+Pred3=Pred3[!is.na(Pred3[,2]),]
+correlation2_5=cor(Pred3[,1],Pred3[,2])			  	
+print("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+print(correlation1_2)
+print(correlation2_2)
+print(correlation1_5)
+print(correlation2_5)
+
+results <- rbind(results, data.frame(
+    correlation1_2 = correlation1_2,
+    correlation2_2 = correlation2_2,
+    correlation1_5 = correlation1_5,
+    correlation2_5 = correlation2_5))
+print(paste("当前 results 行数:", nrow(results)))	
+}}
+write.csv(results, "results_GS_20×51.csv", row.names = FALSE)
+
+
+
+
+#使用permutation方法确定cutoff
+myY0 <- read.csv("new_myY.f.csv", head = TRUE)
+myGD=read.csv(file="myGD.f.csv",head=T)
+myGM=read.csv(file="myGM_newsoftware.csv",head=T)
+myCV=read.csv(file="myCV.f.csv",head=T)
+source("C:\\work\\software\\gapit_functions.txt")
+# 存储50个最小值的向量
+min_values <- numeric(50)
+for (i in 1:50) {
+# 随机抽样索引
+index <- sample(1:520, 520, replace = FALSE)
+# 从myY_5中选择样本
+myY_5=myY0[, c(1, 5)]
+myY_5F <- myY_5[index, 2]
+myY_5F=cbind(myY_5[,1],myY_5F)
+# 转换为数值型
+myY_5F_numeric <- as.numeric(myY_5F[, 2])
+myY_5F_final <- data.frame(Sample = myY_5F[, 1], Value = myY_5F_numeric)
+myGAPIT_sigs <- GAPIT(Y = myY_5F_final, 
+                      GD = myGD,
+                      GM = myGM,
+                      CV = myCV,
+                      model = c("GLM"))  
+gwas_2 <- myGAPIT_sigs$GWAS
+min_values[i] <- min(gwas_2[, 4])
+}
+# 从50个最小值中选择最终的最小值
+final_min_value <- min(min_values)
+print(final_min_value)
+#2.75574e-06
+n=29233
+cutoff=final_min_value*n
+#0.08055856

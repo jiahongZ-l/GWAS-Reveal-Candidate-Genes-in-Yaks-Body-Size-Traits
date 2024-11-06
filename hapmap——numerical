@@ -1,0 +1,57 @@
+setwd("C:\\work")
+myG <- read.csv("C:\\work\\706yaks.hmp.hmp.csv", head = FALSE)
+source("http://zzlab.net/GAPIT/gapit_functions.txt")
+myGAPIT <- GAPIT(
+G=myG,
+PCA.total=3,
+)#第一种得到基因型数据的分析结果
+
+output.numerical=TRUE,file.output =FALSE
+)
+myGD= myGAPIT$GD
+myGM= myGAPIT$GM
+write.csv(myGD,"C:\\work\\myGD.csv",quote=F,row.names=F,col.names=T)
+write.csv(myGM,"C:\\work\\myGM.csv",quote=F,row.names=F,col.names=T)#第二种得到数值型文件
+
+write.csv(myGD,"Numeric format for genotype files.csv",quote=F,row.names=F,col.names=T)
+write.csv(myGM,"mdp_SNP_information.csv",quote=F,row.names=F,col.names=T)
+
+
+
+
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)
+myGD=read.csv(file="Numeric format for genotype files.csv",head=T)
+myGM=read.csv(file="mdp_SNP_information.csv",head=T)
+myCV=read.csv(file="myCV.csv",head=T)#526
+myCV=cbind(as.data.frame(myCV[,1]),matrix(as.numeric(as.matrix(myCV[,-1])),nrow(myCV),ncol(myCV)-1))
+source("http://zzlab.net/GAPIT/gapit_functions.txt")
+taxa.merge=merge(myGD[,c(1,2)],myY[,c(1,9)],by.x="taxa",by.y="class",all=T) 
+taxa.nona=taxa.merge[!is.na(taxa.merge[,2]),]
+index=match(myGD[,1],taxa.nona[,1])
+#taxa.nona[index,]
+colorss=as.character(taxa.nona[,3])
+colorss[colorss=="MW"]="darkred"
+colorss[colorss=="YS"]="darkblue"
+colorss[colorss=="HH"]="darkgreen"
+myGAPIT <- GAPIT(
+GD=myGD,
+GM=myGM,
+CV=myCV,
+PCA.total=3,
+PCA.3d=TRUE,
+PCA.col=colorss,
+NJtree.group=3
+)
+
+
+
+
+
+unique_chromosomes <- unique(myG$V3)
+print(unique_chromosomes)  
+for (chrom in unique_chromosomes) {
+  chrom_data <- subset(myG, V3 == chrom)
+  file_name <- paste0("Genotype file of 706 yaks_chromosome", chrom, ".txt")
+  write.table(chrom_data, file = file_name, sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+}

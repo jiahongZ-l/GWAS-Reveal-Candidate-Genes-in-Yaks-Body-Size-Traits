@@ -1,0 +1,66 @@
+setwd("C:\\work")
+myY <- read.csv("file1111.csv", head = TRUE)#826
+myGD=read.csv(file="Numeric format for genotype files.csv",head=T)#706
+myGM=read.csv(file="mdp_SNP_information.csv",head=T)
+myCV=read.csv(file="myCV.csv",head=T)#526
+myCV=cbind(as.data.frame(myCV[,1]),matrix(as.numeric(as.matrix(myCV[,-1])),nrow(myCV),ncol(myCV)-1))
+source("C:\\work\\software\\gapit_functions_new.txt")
+taxa.merge=merge(myGD[,c(1,2)],myY[,c(1,9)],by.x="taxa",by.y="class",all=T) 
+taxa.nona=taxa.merge[!is.na(taxa.merge[,2]),]
+index=match(myGD[,1],taxa.nona[,1])
+#taxa.nona[index,]
+colorss=as.character(taxa.nona[,3])
+colorss[colorss=="MW"]="red"
+colorss[colorss=="YS"]="blue"
+colorss[colorss=="HH"]="green"
+col_indices <- c(2,3,4,5,6,7,8)
+for (col_index in col_indices) {#五个模型七个性状
+myGAPIT <- GAPIT(
+Y = myY[, c(1, col_index)],
+GD = myGD,
+GM = myGM,
+CV=myCV,
+cutOff=0.29223,
+PCA.total = 3,
+PCA.col = colorss,
+PCA.3d=TRUE,
+NJtree.group=3,
+#memo=colnames(myY)[col_index],
+model = c("GLM", "MLM", "MLMM", "FarmCPU", "Blink"),
+Multiple_analysis = TRUE
+)
+}
+myGAPIT=GAPIT(#五个模型一个性状
+Y=myY[,c(1,6)], 
+GD=myGD,
+GM=myGM,
+CV=myCV,
+cutOff=0.29223,
+#PCA.total=3,
+#PCA.col=colorss,
+#PCA.3d=TRUE,根据是否需要PCA的3D模型来决定是否注释掉
+#model=c("FarmCPU", "Blink","MLMM"),
+model=c("GLM","MLM","MLMM","FarmCPU","Blink"),
+Multiple_analysis=TRUE)
+
+
+
+GAPIT.Multiple.Manhattan(model_store=c("GLM", "MLM", "MLMM", "FarmCPU", "Blink"),GM=myGM,Y.names=colnames(myY)[2],plot.type=c("h","w"))
+
+GAPIT.Multiple.Manhattan(model_store=c("GLM", "MLM", "MLMM", "FarmCPU", "Blink"),GM=myGM,cutOff=0.29223,Y.names=colnames(myY)[2],plot.type=c("h","w"))
+
+GMM=GAPIT.Multiple.Manhattan(model_store=c("GLM", "MLM", "MLMM", "FarmCPU", "Blink"),GM=myGM,cutOff=0.29223,Y.names=colnames(myY)[2],plot.type=c("s"))
+cutOff=0.29223
+GAPIT.Circle.Manhattan.Plot(band=5,r=3,GMM$multip_mapP,plot.type=c("c","q"),signal.line=1,xz=GMM$xz,threshold=cutOff)
+
+
+
+#给图片做图例
+pdf("Legend_of_PCA.pdf", width = 9, height = 7)
+plot(1, type="n", xlab="", ylab="", xlim=c(0, 1), ylim=c(0, 1))
+par(xpd=TRUE)
+legend("topright", inset=c(0.3, 0.3), legend=c("MW", "YS", "HH"), col=c("red", "blue", "green"), lty=1, cex=1.2)
+dev.off()
+
+
+
